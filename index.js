@@ -10,19 +10,19 @@ import graphqlResolver from './graphql/resolvers.js';
 import auth from './middlewares/auth.js';
 import { clearImage } from './utils/clear-image.js';
 
-(async () => {
-  try {
-    await mongoose.connect('mongodb://localhost/graphql', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      useFindAndModify: false,
-      useCreateIndex: true,
-    });
-    console.log('Database connection successful !!!');
-  } catch (error) {
-    console.log(error);
-  }
-})();
+// (async () => {
+try {
+  await mongoose.connect('mongodb://localhost/graphql', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true,
+  });
+  console.log('Database connection successful !!!');
+} catch (error) {
+  console.log(error);
+}
+// })();
 
 const app = express();
 const __dirname = path.resolve();
@@ -109,3 +109,4 @@ app.use(
 const server = app.listen(8080, () => {
   console.log('http://localhost:8080');
 });
+
