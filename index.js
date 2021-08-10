@@ -3,7 +3,6 @@ import path from 'path';
 import express from 'express';
 import mongoose from 'mongoose';
 import multer from 'multer';
-// import { graphqlHTTP } from 'express-graphql';
 
 import typeDefs from './graphql/schema.js';
 import resolvers from './graphql/resolvers.js';
@@ -34,15 +33,20 @@ try {
 const app = express();
 const httpServer = createServer(app);
 const __dirname = path.resolve();
-
+app.use(auth);
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 const server = new ApolloServer({
-  schema, plugins: [
+  schema,
+  context: ({ req, res }) => (
+    { req }
+  ),
+  plugins: [
     ApolloServerPluginLandingPageGraphQLPlayground(),
-  ]
+  ],
 });
 await server.start();
 server.applyMiddleware({ app });
+
 const subscriptionServer = SubscriptionServer.create({
   schema,
   execute,
@@ -80,26 +84,10 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(
   multer({ storage: fileStorage, fileFilter: fileFilter }).single('image')
 );
-
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'OPTIONS, GET, POST, PUT, PATCH, DELETE'
-  );
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-app.use(auth);
 
 app.put('/upload-image', (req, res, next) => {
   if (!req.isAuth) {

@@ -5,10 +5,13 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import Post from '../models/post.js';
 import { clearImage } from '../utils/clear-image.js';
+import { PubSub } from 'graphql-subscriptions';
+
+const pubsub = new PubSub();
 
 export default {
   Query: {
-    login: async (_, { email, password }, req) => {
+    login: async (_, { email, password }, { req }, __) => {
       const user = await User.findOne({ email: email });
       if (!user) {
         const error = new Error('User not found.');
@@ -27,17 +30,16 @@ export default {
           email: user.email,
         },
         'somesupersecretsecret',
-        { expiresIn: '1h' }
+        { expiresIn: '1d' }
       );
       return { token: token, userId: user._id.toString() };
     },
-    posts: async (_, { page = 1 }, req) => {
-
-      // if (!req.isAuth) {
-      //   const error = new Error('Not authenticated!');
-      //   error.code = 401;
-      //   throw error;
-      // }
+    posts: async (_, { page = 1 }, { req }, __) => {
+      if (!req.isAuth) {
+        const error = new Error('Not authenticated!');
+        error.code = 401;
+        throw error;
+      }
       const perPage = 2;
       const totalPosts = await Post.find().countDocuments();
       const posts = await Post.find()
@@ -57,12 +59,12 @@ export default {
         totalPosts: totalPosts,
       };
     },
-    post: async (_, { id }, req) => {
-      // if (!req.isAuth) {
-      //   const error = new Error('Not authenticated!');
-      //   error.code = 401;
-      //   throw error;
-      // }
+    post: async (_, { id }, { req }, __) => {
+      if (!req.isAuth) {
+        const error = new Error('Not authenticated!');
+        error.code = 401;
+        throw error;
+      }
       const post = await Post.findById(id).populate('creator');
       if (!post) {
         const error = new Error('No post found!');
@@ -76,12 +78,12 @@ export default {
         updatedAt: post.updatedAt.toISOString(),
       };
     },
-    user: async (_, args, req) => {
-      // if (!req.isAuth) {
-      //   const error = new Error('Not authenticated!');
-      //   error.code = 401;
-      //   throw error;
-      // }
+    user: async (_, args, { req }, __) => {
+      if (!req.isAuth) {
+        const error = new Error('Not authenticated!');
+        error.code = 401;
+        throw error;
+      }
       const user = await User.findById(req.userId);
       if (!user) {
         const error = new Error('No user found!');
@@ -92,7 +94,7 @@ export default {
     },
   },
   Mutation: {
-    createUser: async (_, { userInput }, req) => {
+    createUser: async (_, { userInput }, { req }, __) => {
       const errors = [];
       if (!validator.isEmail(userInput.email)) {
         errors.push({ message: 'E-Mail is invalid.' });
@@ -121,12 +123,12 @@ export default {
       return { ...user._doc, _id: user._id.toString() };
     },
 
-    createPost: async (_, { postInput }, req) => {
-      // if (!req.isAuth) {
-      //   const error = new Error('Unauthorized!');
-      //   error.code = 401;
-      //   throw error;
-      // }
+    createPost: async (_, { postInput }, { req }, __) => {
+      if (!req.isAuth) {
+        const error = new Error('Unauthorized!');
+        error.code = 401;
+        throw error;
+      }
       const errors = [];
       if (!validator.isLength(postInput.title, { min: 5 })) {
         errors.push({ message: 'Title is invalid.' });
@@ -155,6 +157,7 @@ export default {
       await post.save();
       user.posts.push(post);
       await user.save();
+      pubsub.publish('POST_CREATED', { postCreated: post });
       return {
         ...post._doc,
         _id: post._id.toString(),
@@ -163,7 +166,7 @@ export default {
       };
     },
 
-    updatePost: async (_, { id, postInput }, req) => {
+    updatePost: async (_, { id, postInput }, { req }, __) => {
       if (!req.isAuth) {
         const error = new Error('Not authenticated!');
         error.code = 401;
@@ -199,6 +202,7 @@ export default {
         post.imageUrl = postInput.imageUrl;
       }
       await post.save();
+      pubsub.publish('POST_UPDATED', { postUpdated: post });
       return {
         ...post._doc,
         _id: post._id.toString(),
@@ -206,7 +210,7 @@ export default {
         updatedAt: post.updatedAt.toISOString(),
       };
     },
-    deletePost: async (_, { id }, req) => {
+    deletePost: async (_, { id }, { req }, __) => {
       if (!req.isAuth) {
         const error = new Error('Not authenticated!');
         error.code = 401;
@@ -234,7 +238,7 @@ export default {
         return false;
       }
     },
-    updateStatus: async (_, { status }, req) => {
+    updateStatus: async (_, { status }, { req }, __) => {
       if (!req.isAuth) {
         const error = new Error('Not authenticated!');
         error.code = 401;
@@ -250,5 +254,13 @@ export default {
       await user.save();
       return { ...user._doc, _id: user._id.toString() };
     }
+  },
+  Subscription: {
+    postCreated: {
+      subscribe: () => pubsub.asyncIterator(['POST_CREATED']),
+    },
+    postUpdated: {
+      subscribe: () => pubsub.asyncIterator(['POST_UPDATED']),
+    },
   },
 };

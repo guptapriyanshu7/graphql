@@ -57,4 +57,9 @@ export default gql`
 		deletePost(id: ID!): Boolean
 		updateStatus(status: String!): User!
 	}
+
+	type Subscription {
+  	postCreated: Post!
+  	postUpdated: Post!
+	}
 `;
