@@ -3,14 +3,22 @@ import path from 'path';
 import express from 'express';
 import mongoose from 'mongoose';
 import multer from 'multer';
-import { graphqlHTTP } from 'express-graphql';
+// import { graphqlHTTP } from 'express-graphql';
 
-import graphqlSchema from './graphql/schema.js';
-import graphqlResolver from './graphql/resolvers.js';
+import typeDefs from './graphql/schema.js';
+import resolvers from './graphql/resolvers.js';
 import auth from './middlewares/auth.js';
 import { clearImage } from './utils/clear-image.js';
 
-// (async () => {
+import { createServer } from 'http';
+import { execute, subscribe } from 'graphql';
+import { SubscriptionServer } from 'subscriptions-transport-ws';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import {
+  ApolloServerPluginLandingPageGraphQLPlayground
+} from "apollo-server-core"
+import { ApolloServer } from 'apollo-server-express';
+
 try {
   await mongoose.connect('mongodb://localhost/graphql', {
     useNewUrlParser: true,
@@ -22,10 +30,31 @@ try {
 } catch (error) {
   console.log(error);
 }
-// })();
 
 const app = express();
+const httpServer = createServer(app);
 const __dirname = path.resolve();
+
+const schema = makeExecutableSchema({ typeDefs, resolvers });
+const server = new ApolloServer({
+  schema, plugins: [
+    ApolloServerPluginLandingPageGraphQLPlayground(),
+  ]
+});
+await server.start();
+server.applyMiddleware({ app });
+const subscriptionServer = SubscriptionServer.create({
+  schema,
+  execute,
+  subscribe,
+}, {
+  server: httpServer,
+  path: server.graphqlPath,
+});
+
+['SIGINT', 'SIGTERM'].forEach(signal => {
+  process.on(signal, () => subscriptionServer.close());
+});
 
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -88,25 +117,24 @@ app.put('/upload-image', (req, res, next) => {
   });
 });
 
-app.use(
-  '/graphql',
-  graphqlHTTP({
-    schema: graphqlSchema,
-    rootValue: graphqlResolver,
-    graphiql: true,
-    customFormatErrorFn(error) {
-      if (!error.originalError) {
-        return error;
-      }
-      const data = error.originalError.data;
-      const message = error.message || 'An error occurred.';
-      const code = error.originalError.code || 500;
-      return { message: message, status: code, data: data };
-    },
-  })
-);
+// app.use(
+//   '/graphql',
+//   graphqlHTTP({
+//     schema: graphqlSchema,
+//     rootValue: graphqlResolver,
+//     graphiql: true,
+//     customFormatErrorFn(error) {
+//       if (!error.originalError) {
+//         return error;
+//       }
+//       const data = error.originalError.data;
+//       const message = error.message || 'An error occurred.';
+//       const code = error.originalError.code || 500;
+//       return { message: message, status: code, data: data };
+//     },
+//   })
+// );
 
-const server = app.listen(8080, () => {
+httpServer.listen(8080, () => {
   console.log('http://localhost:8080');
 });
-

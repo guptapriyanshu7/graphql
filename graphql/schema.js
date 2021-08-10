@@ -1,6 +1,7 @@
-import { buildSchema } from 'graphql';
+// import { buildSchema } from 'graphql';
+import { gql } from 'apollo-server';
 
-export default buildSchema(`
+export default gql`
 	type Post {
 		_id: ID!
 		title: String!
@@ -42,23 +43,18 @@ export default buildSchema(`
 		imageUrl: String!
 	}
 
-	type RootQuery {
+	type Query {
 		login(email: String!, password: String!): AuthData!
 		posts(page: Int): PostData!
 		post(id: ID!): Post!
 		user: User!
 	}
 
-  type RootMutation {
+  type Mutation {
 		createUser(userInput: UserInputData): User!
 		createPost(postInput: PostInputData): Post!
 		updatePost(id: ID!, postInput: PostInputData): Post!
 		deletePost(id: ID!): Boolean
 		updateStatus(status: String!): User!
 	}
-	
-  schema {
-		query: RootQuery
-    mutation: RootMutation
-  }
-`);
+`;
