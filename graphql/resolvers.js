@@ -6,8 +6,13 @@ import User from '../models/user.js';
 import Post from '../models/post.js';
 import { clearImage } from '../utils/clear-image.js';
 import { PubSub } from 'graphql-subscriptions';
+import { GraphQLUpload } from 'graphql-upload';
+import { finished } from 'stream/promises';
+import fs from 'fs';
+import path from 'path';
 
 const pubsub = new PubSub();
+const __dirname = path.resolve();
 
 export default {
   Query: {
@@ -93,6 +98,7 @@ export default {
       return { ...user._doc, _id: user._id.toString() };
     },
   },
+  Upload: GraphQLUpload,
   Mutation: {
     createUser: async (_, { userInput }, { req }, __) => {
       const errors = [];
@@ -136,22 +142,27 @@ export default {
       if (!validator.isLength(postInput.content, { min: 5 })) {
         errors.push({ message: 'Content is invalid.' });
       }
+      const file = await postInput.imageFile;
+      if (!file.filename) {
+        errors.push({ message: 'No image provided.' });
+      }
       if (errors.length > 0) {
         const error = new Error('Invalid input.');
         error.data = errors;
         error.code = 422;
         throw error;
       }
-      const user = await User.findById('5feda54f39c3aa3b542fb8c3');
+      const user = await User.findById(req.userId);
       if (!user) {
         const error = new Error('Invalid user.');
         error.code = 401;
         throw error;
       }
+      const filename = await singleUpload(file);
       const post = new Post({
         title: postInput.title,
         content: postInput.content,
-        imageUrl: postInput.imageUrl,
+        imageUrl: filename,
         creator: user,
       });
       await post.save();
@@ -264,3 +275,18 @@ export default {
     },
   },
 };
+
+async function singleUpload(file) {
+  const { createReadStream, filename, mimetype, encoding } = file;
+  const stream = createReadStream();
+  const updatedFileName = new Date()
+    .toISOString()
+    .replace(/:/g, '-') + '-' + filename;
+  const savePath = path
+    .join(__dirname, 'images', updatedFileName);
+  const out = fs
+    .createWriteStream(savePath);
+  stream.pipe(out);
+  await finished(out);
+  return updatedFileName;
+}

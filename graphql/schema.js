@@ -1,7 +1,8 @@
-// import { buildSchema } from 'graphql';
 import { gql } from 'apollo-server';
 
 export default gql`
+	scalar Upload
+
 	type Post {
 		_id: ID!
 		title: String!
@@ -40,7 +41,7 @@ export default gql`
 	input PostInputData {
 		title: String!
 		content: String!
-		imageUrl: String!
+		imageFile: Upload!
 	}
 
 	type Query {
