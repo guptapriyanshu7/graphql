@@ -30,16 +30,13 @@ export default {
         throw error;
       }
       const token = jwt.sign(
-        {
-          userId: user._id.toString(),
-          email: user.email,
-        },
+        { userId: user._id.toString() },
         'somesupersecretsecret',
         { expiresIn: '1d' }
       );
       return { token: token, userId: user._id.toString() };
     },
-    posts: async (_, { page = 1 }, { req }, __) => {
+    getPosts: async (_, { page = 1 }, { req }, __) => {
       if (!req.isAuth) {
         const error = new Error('Not authenticated!');
         error.code = 401;
@@ -128,7 +125,6 @@ export default {
       await user.save();
       return { ...user._doc, _id: user._id.toString() };
     },
-
     createPost: async (_, { postInput }, { req }, __) => {
       if (!req.isAuth) {
         const error = new Error('Unauthorized!');
@@ -176,7 +172,6 @@ export default {
         updatedAt: post.updatedAt.toISOString(),
       };
     },
-
     updatePost: async (_, { id, postInput }, { req }, __) => {
       if (!req.isAuth) {
         const error = new Error('Not authenticated!');
@@ -264,7 +259,7 @@ export default {
       user.status = status;
       await user.save();
       return { ...user._doc, _id: user._id.toString() };
-    }
+    },
   },
   Subscription: {
     postCreated: {
@@ -279,13 +274,10 @@ export default {
 async function singleUpload(file) {
   const { createReadStream, filename, mimetype, encoding } = file;
   const stream = createReadStream();
-  const updatedFileName = new Date()
-    .toISOString()
-    .replace(/:/g, '-') + '-' + filename;
-  const savePath = path
-    .join(__dirname, 'images', updatedFileName);
-  const out = fs
-    .createWriteStream(savePath);
+  const updatedFileName =
+    new Date().toISOString().replace(/:/g, '-') + '-' + filename;
+  const savePath = path.join(__dirname, 'images', updatedFileName);
+  const out = fs.createWriteStream(savePath);
   stream.pipe(out);
   await finished(out);
   return updatedFileName;

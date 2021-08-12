@@ -8,8 +8,8 @@ export default (req, res, next) => {
   }
   try {
     const token = authHeader.split(' ')[1];
-    const decodedToken = jwt.verify(token, 'somesupersecretsecret');
-    req.userId = decodedToken.userId;
+    const payload = jwt.verify(token, 'somesupersecretsecret');
+    req.userId = payload.userId;
     req.isAuth = true;
     next();
   } catch (error) {
