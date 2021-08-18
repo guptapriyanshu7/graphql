@@ -1,15 +1,15 @@
-import validator from 'validator';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import validator from "validator";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-import User from '../models/user.js';
-import Post from '../models/post.js';
-import { clearImage } from '../utils/clear-image.js';
-import { PubSub } from 'graphql-subscriptions';
-import { GraphQLUpload } from 'graphql-upload';
-import { finished } from 'stream/promises';
-import fs from 'fs';
-import path from 'path';
+import User from "../models/user.js";
+import Post from "../models/post.js";
+import { clearImage } from "../utils/clear-image.js";
+import { PubSub } from "graphql-subscriptions";
+import { GraphQLUpload } from "graphql-upload";
+import { finished } from "stream/promises";
+import fs from "fs";
+import path from "path";
 
 const pubsub = new PubSub();
 const __dirname = path.resolve();
@@ -19,26 +19,26 @@ export default {
     login: async (_, { email, password }, { req }, __) => {
       const user = await User.findOne({ email: email });
       if (!user) {
-        const error = new Error('User not found.');
+        const error = new Error("User not found.");
         error.code = 401;
         throw error;
       }
       const isEqual = await bcrypt.compare(password, user.password);
       if (!isEqual) {
-        const error = new Error('Password is incorrect.');
+        const error = new Error("Password is incorrect.");
         error.code = 401;
         throw error;
       }
       const token = jwt.sign(
         { userId: user._id.toString() },
-        'somesupersecretsecret',
-        { expiresIn: '1d' }
+        "somesupersecretsecret",
+        { expiresIn: "1d" }
       );
       return { token: token, userId: user._id.toString() };
     },
     getPosts: async (_, { page = 1 }, { req }, __) => {
       if (!req.isAuth) {
-        const error = new Error('Not authenticated!');
+        const error = new Error("Not authenticated!");
         error.code = 401;
         throw error;
       }
@@ -48,7 +48,7 @@ export default {
         .sort({ createdAt: -1 })
         .skip((page - 1) * perPage)
         .limit(perPage)
-        .populate('creator');
+        .populate("creator");
       return {
         posts: posts.map((p) => {
           return {
@@ -63,13 +63,13 @@ export default {
     },
     post: async (_, { id }, { req }, __) => {
       if (!req.isAuth) {
-        const error = new Error('Not authenticated!');
+        const error = new Error("Not authenticated!");
         error.code = 401;
         throw error;
       }
-      const post = await Post.findById(id).populate('creator');
+      const post = await Post.findById(id).populate("creator");
       if (!post) {
-        const error = new Error('No post found!');
+        const error = new Error("No post found!");
         error.code = 404;
         throw error;
       }
@@ -82,13 +82,13 @@ export default {
     },
     user: async (_, args, { req }, __) => {
       if (!req.isAuth) {
-        const error = new Error('Not authenticated!');
+        const error = new Error("Not authenticated!");
         error.code = 401;
         throw error;
       }
       const user = await User.findById(req.userId);
       if (!user) {
-        const error = new Error('No user found!');
+        const error = new Error("No user found!");
         error.code = 404;
         throw error;
       }
@@ -100,20 +100,20 @@ export default {
     createUser: async (_, { userInput }, { req }, __) => {
       const errors = [];
       if (!validator.isEmail(userInput.email)) {
-        errors.push({ message: 'E-Mail is invalid.' });
+        errors.push({ message: "E-Mail is invalid." });
       }
       if (!validator.isLength(userInput.password, { min: 5 })) {
-        errors.push({ message: 'Password too short!' });
+        errors.push({ message: "Password too short!" });
       }
       if (errors.length > 0) {
-        const error = new Error('Invalid input.');
+        const error = new Error("Invalid input.");
         error.data = errors;
         error.code = 422;
         throw error;
       }
       const dupUser = await User.findOne({ email: userInput.email });
       if (dupUser) {
-        const error = new Error('User exists already!');
+        const error = new Error("User exists already!");
         throw error;
       }
       const hashedPassword = await bcrypt.hash(userInput.password, 12);
@@ -127,30 +127,30 @@ export default {
     },
     createPost: async (_, { postInput }, { req }, __) => {
       if (!req.isAuth) {
-        const error = new Error('Unauthorized!');
+        const error = new Error("Unauthorized!");
         error.code = 401;
         throw error;
       }
       const errors = [];
       if (!validator.isLength(postInput.title, { min: 5 })) {
-        errors.push({ message: 'Title is invalid.' });
+        errors.push({ message: "Title is invalid." });
       }
       if (!validator.isLength(postInput.content, { min: 5 })) {
-        errors.push({ message: 'Content is invalid.' });
+        errors.push({ message: "Content is invalid." });
       }
       const file = await postInput.imageFile;
-      if (!file.filename) {
-        errors.push({ message: 'No image provided.' });
+      if (!file) {
+        errors.push({ message: "No image provided." });
       }
       if (errors.length > 0) {
-        const error = new Error('Invalid input.');
+        const error = new Error("Invalid input.");
         error.data = errors;
         error.code = 422;
         throw error;
       }
       const user = await User.findById(req.userId);
       if (!user) {
-        const error = new Error('Invalid user.');
+        const error = new Error("Invalid user.");
         error.code = 401;
         throw error;
       }
@@ -164,7 +164,7 @@ export default {
       await post.save();
       user.posts.push(post);
       await user.save();
-      pubsub.publish('POST_CREATED', { postCreated: post });
+      pubsub.publish("POST_CREATED", { postCreated: post });
       return {
         ...post._doc,
         _id: post._id.toString(),
@@ -174,41 +174,44 @@ export default {
     },
     updatePost: async (_, { id, postInput }, { req }, __) => {
       if (!req.isAuth) {
-        const error = new Error('Not authenticated!');
+        const error = new Error("Not authenticated!");
         error.code = 401;
         throw error;
       }
       const errors = [];
       if (!validator.isLength(postInput.title, { min: 5 })) {
-        errors.push({ message: 'Title is invalid.' });
+        errors.push({ message: "Title is invalid." });
       }
       if (!validator.isLength(postInput.content, { min: 5 })) {
-        errors.push({ message: 'Content is invalid.' });
+        errors.push({ message: "Content is invalid." });
       }
       if (errors.length > 0) {
-        const error = new Error('Invalid input.');
+        const error = new Error("Invalid input.");
         error.data = errors;
         error.code = 422;
         throw error;
       }
-      const post = await Post.findById(id).populate('creator');
+      const post = await Post.findById(id).populate("creator");
       if (!post) {
-        const error = new Error('No post found!');
+        const error = new Error("No post found!");
         error.code = 404;
         throw error;
       }
       if (post.creator._id.toString() !== req.userId) {
-        const error = new Error('Not authorized!');
+        const error = new Error("Not authorized!");
         error.code = 403;
         throw error;
       }
       post.title = postInput.title;
       post.content = postInput.content;
-      if (postInput.imageUrl !== 'undefined') {
-        post.imageUrl = postInput.imageUrl;
+      const file = await postInput.imageFile;
+      if (file) {
+        clearImage(post.imageUrl);
+        const filename = await singleUpload(file);
+        post.imageUrl = filename;
       }
       await post.save();
-      pubsub.publish('POST_UPDATED', { postUpdated: post });
+      pubsub.publish("POST_UPDATED", { postUpdated: post });
       return {
         ...post._doc,
         _id: post._id.toString(),
@@ -218,18 +221,18 @@ export default {
     },
     deletePost: async (_, { id }, { req }, __) => {
       if (!req.isAuth) {
-        const error = new Error('Not authenticated!');
+        const error = new Error("Not authenticated!");
         error.code = 401;
         throw error;
       }
       const post = await Post.findById(id);
       if (!post) {
-        const error = new Error('No post found!');
+        const error = new Error("No post found!");
         error.code = 404;
         throw error;
       }
       if (post.creator.toString() !== req.userId) {
-        const error = new Error('Not authorized!');
+        const error = new Error("Not authorized!");
         error.code = 403;
         throw error;
       }
@@ -246,13 +249,13 @@ export default {
     },
     updateStatus: async (_, { status }, { req }, __) => {
       if (!req.isAuth) {
-        const error = new Error('Not authenticated!');
+        const error = new Error("Not authenticated!");
         error.code = 401;
         throw error;
       }
       const user = await User.findById(req.userId);
       if (!user) {
-        const error = new Error('No user found!');
+        const error = new Error("No user found!");
         error.code = 404;
         throw error;
       }
@@ -263,10 +266,10 @@ export default {
   },
   Subscription: {
     postCreated: {
-      subscribe: () => pubsub.asyncIterator(['POST_CREATED']),
+      subscribe: () => pubsub.asyncIterator(["POST_CREATED"]),
     },
     postUpdated: {
-      subscribe: () => pubsub.asyncIterator(['POST_UPDATED']),
+      subscribe: () => pubsub.asyncIterator(["POST_UPDATED"]),
     },
   },
 };
@@ -275,8 +278,8 @@ async function singleUpload(file) {
   const { createReadStream, filename, mimetype, encoding } = file;
   const stream = createReadStream();
   const updatedFileName =
-    new Date().toISOString().replace(/:/g, '-') + '-' + filename;
-  const savePath = path.join(__dirname, 'images', updatedFileName);
+    new Date().toISOString().replace(/:/g, "-") + "-" + filename;
+  const savePath = path.join(__dirname, "images", updatedFileName);
   const out = fs.createWriteStream(savePath);
   stream.pipe(out);
   await finished(out);

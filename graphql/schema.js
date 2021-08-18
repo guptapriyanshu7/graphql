@@ -1,4 +1,4 @@
-import { gql } from 'apollo-server';
+import { gql } from "apollo-server";
 
 export default gql`
   scalar Upload
@@ -44,6 +44,12 @@ export default gql`
     imageFile: Upload!
   }
 
+  input PostUpdateData {
+    title: String!
+    content: String!
+    imageFile: Upload
+  }
+
   type Query {
     login(email: String!, password: String!): AuthData!
     getPosts(page: Int): PostData!
@@ -54,7 +60,7 @@ export default gql`
   type Mutation {
     createUser(userInput: UserInputData): User!
     createPost(postInput: PostInputData): Post!
-    updatePost(id: ID!, postInput: PostInputData): Post!
+    updatePost(id: ID!, postInput: PostUpdateData): Post!
     deletePost(id: ID!): Boolean
     updateStatus(status: String!): User!
   }
