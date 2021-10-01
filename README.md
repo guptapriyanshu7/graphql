@@ -40,7 +40,7 @@ rest-api
 **REST alternative** - https://github.com/guptapriyanshu7/rest-api
 
 # License
-This project is licensed under the MIT License, © 2021 Priyanshu Gupta. See [LICENSE](https://github.com/guptapriyanshu7/graphql/blob/main/LICENSE) for more details.
+This project is licensed under the MIT License, © 2021 Priyanshu Gupta. See [LICENSE](https://github.com/guptapriyanshu7/graphql/blob/apollo/LICENSE) for more details.
 
 
   
