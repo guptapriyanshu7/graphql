@@ -1,7 +1,6 @@
 # PostNode GraphQL Server
 
 [![GitHub issues](https://img.shields.io/github/issues/guptapriyanshu7/graphql?style=for-the-badge)](https://github.com/guptapriyanshu7/graphql/issues)
-[![GitHub license](https://img.shields.io/github/license/guptapriyanshu7/graphql?style=for-the-badge)](https://github.com/guptapriyanshu7/graphql/blob/apollo/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/guptapriyanshu7/graphql?style=for-the-badge)](https://github.com/guptapriyanshu7/graphql/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/guptapriyanshu7/graphql?style=for-the-badge)](https://github.com/guptapriyanshu7/graphql/network)
 
