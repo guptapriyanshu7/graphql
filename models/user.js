@@ -18,7 +18,7 @@ const userSchema = new Schema({
   },
   status: {
     type: String,
-    default: 'I am new!',
+    default: 'Hey!',
   },
   posts: [
     {

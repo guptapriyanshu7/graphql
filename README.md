@@ -35,6 +35,95 @@ rest-api
 - Start the server: `npm start`
 - Start requesting from the PORT:graphql.
 
+## Example Queries
+
+```
+  mutation CreatePost($postInput: PostInputData!) {
+    createPost(postInput: $postInput) {
+      title
+      content
+      imageUrl
+      createdAt
+    }
+  }
+```
+
+```
+  mutation UpdatePost($id: ID!, $postInput: PostUpdateData!) {
+    updatePost(id: $id, postInput: $postInput) {
+      title
+      content
+      imageUrl
+      createdAt
+    }
+  }
+```
+
+```
+ query SinglePost($id: ID!) {
+    post(id: $id) {
+      title
+      content
+      imageUrl
+    }
+  }
+```
+
+```
+  query Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      token
+      userId
+    }
+  }
+```
+
+```
+  subscription {
+    postCreated {
+      _id
+      title
+      content
+    }
+  }
+```
+
+```
+  query GetPosts($page: Int) {
+    getPosts(page: $page) {
+      totalPosts
+      posts {
+        _id
+        title
+        content
+      }
+    }
+  }
+```
+
+```
+  mutation Register($userInput: UserInputData!) {
+    createUser(userInput: $userInput) {
+      _id
+    }
+  }
+```
+
+```
+  query {
+    user {
+      _id
+      name
+    }
+  }
+```
+
+```
+  mutation DeletePost($id: ID!) {
+    deletePost(id: $id)
+  }
+```
+
 
 **Frontend** - https://github.com/guptapriyanshu7/PostNode \
 **REST alternative** - https://github.com/guptapriyanshu7/rest-api
