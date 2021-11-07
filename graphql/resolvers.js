@@ -16,26 +16,6 @@ const __dirname = path.resolve();
 
 export default {
   Query: {
-    login: async (_, { email, password }, { req }, __) => {
-      const user = await User.findOne({ email: email });
-      if (!user) {
-        const error = new Error("User not found.");
-        error.code = 401;
-        throw error;
-      }
-      const isEqual = await bcrypt.compare(password, user.password);
-      if (!isEqual) {
-        const error = new Error("Password is incorrect.");
-        error.code = 401;
-        throw error;
-      }
-      const token = jwt.sign(
-        { userId: user._id.toString() },
-        "somesupersecretsecret",
-        { expiresIn: "1d" }
-      );
-      return { token: token, userId: user._id.toString() };
-    },
     getPosts: async (_, { page = 1 }, { req }, __) => {
       if (!req.isAuth) {
         const error = new Error("Not authenticated!");
@@ -97,6 +77,26 @@ export default {
   },
   Upload: GraphQLUpload,
   Mutation: {
+    login: async (_, { email, password }, { req }, __) => {
+      const user = await User.findOne({ email: email });
+      if (!user) {
+        const error = new Error("User not found.");
+        error.code = 401;
+        throw error;
+      }
+      const isEqual = await bcrypt.compare(password, user.password);
+      if (!isEqual) {
+        const error = new Error("Password is incorrect.");
+        error.code = 401;
+        throw error;
+      }
+      const token = jwt.sign(
+        { userId: user._id.toString() },
+        process.env.SECRET,
+        { expiresIn: "1d" }
+      );
+      return { token: token, userId: user._id.toString() };
+    },
     createUser: async (_, { userInput }, { req }, __) => {
       const errors = [];
       if (!validator.isEmail(userInput.email)) {
